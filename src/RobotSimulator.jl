@@ -211,7 +211,7 @@ function trajectory_controller!(
     Ki::Float64,
     Kd::Float64,
     use_control::Bool = true,
-    write_torques::Bool = true,
+    write_torques::Bool = false,
 )
     mechanism = rs.mechanism
     state = rs.state
@@ -234,8 +234,8 @@ function trajectory_controller!(
     # ADDED FOR READING
     t_file = 0.0
     temp_τ = [0.0,0.0,0.0,0.0]
-    n =0 
-    m = 10
+    #n =0 
+    #m = 10
     function controller!(τ,t,state)
         function controller_write!(τ, t, state)
             if (index >= size(qref)[1])

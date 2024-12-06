@@ -124,8 +124,9 @@ actuators = [0, 0, 0, 0]
 foot = [0, 0]
 ZMProbot.set_nominal!(rs, vis, boom, actuators, foot)
 
-# Simulate the robot 
-controller! = ZMProbot.trajectory_controller!(rs, tplot, qref, Δt, Kp, Ki, Kd, ctrl)
+# Simulate the robot
+write_torques = true;
+controller! = ZMProbot.trajectory_controller!(rs, tplot, qref, Δt, Kp, Ki, Kd, ctrl, write_torques)
 ts, qs, vs = RigidBodyDynamics.simulate(rs.state, tend, controller!; Δt = Δt);
 
 # Open the visulaiser and run the animation 
