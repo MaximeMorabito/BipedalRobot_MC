@@ -27,6 +27,8 @@ ANIMATE_RESULT = true;
 
 MODEL_2D = true;
 
+write_torques = false;
+
 ###########################################################
 #                    Simulation parameters                #
 ###########################################################
@@ -125,11 +127,12 @@ foot = [0, 0]
 ZMProbot.set_nominal!(rs, vis, boom, actuators, foot)
 
 # Simulate the robot
-open("numbers.txt", "w") do file
-    # The file is now open in write mode, and all its contents are deleted.
-    # Do nothing if you don't want to write anything.
+if(write_torques)
+    open("torques.txt", "w") do file
+        # The file is now open in write mode, and all its contents are deleted.
+        # Do nothing if you don't want to write anything.
+    end
 end
-write_torques = true;
 controller! = ZMProbot.trajectory_controller!(rs, tplot, qref, Δt, Kp, Ki, Kd, ctrl, write_torques)
 ts, qs, vs = RigidBodyDynamics.simulate(rs.state, tend, controller!; Δt = Δt);
 

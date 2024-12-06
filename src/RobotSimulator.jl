@@ -230,46 +230,68 @@ function trajectory_controller!(
     push!(rs.CoM, com)
     push!(rs.ZMP, com[1:2])
 
+    τ_file = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+    temp_τ = [0.0,0.0,0.0,0.0]
+
     function controller!(τ, t, state)
-        if (index >= size(qref)[1])
-            stop = true
-            index = size(qref)[1]
-        else
-            stop = false
-        end
-        v̇ = copy(velocity(state))
-        ddl = 2 # For 2 non-actuated foot 
-        actual_q = configuration(state)[(end - 3 - ddl):(end - ddl)]
-        desired_q = vec(qref[index, :])
-        Δq = desired_q - actual_q
-        Δq̇ = vec(zeros(4, 1) .- velocity(state)[(end - 3 - ddl):(end - ddl)])
-
-        v̇_new = pid_control!(pid, Δq, Δq̇, ∫edt, Δt)
-        v̇[(end - 3 - ddl):(end - ddl)] .= v̇_new
-
-        # Reset torque
-        for joint in joints(mechanism)
-            τ[velocity_range(state, joint)] .= 0 # no control
-        end
-
-        if (use_control == false)
-            rand!(τ)
-            if (length(τ) >= 8)
-                τ[1:2] .= 0
+        if(write_torques)
+            if (index >= size(qref)[1])
+                stop = true
+                index = size(qref)[1]
+            else
+                stop = false
             end
-            τ .= (τ .- 0.5)
-            τ[(end - 1):end] .= 0
-        else
-            # Torque in the constrained space 
-            newτ = inverse_dynamics(state, v̇) #- dynamics_bias(state)
-            τ[(end - 3 - ddl):(end - ddl)] .= newτ[(end - 3 - ddl):(end - ddl)]
-        end
+            v̇ = copy(velocity(state))
+            ddl = 2 # For 2 non-actuated foot 
+            actual_q = configuration(state)[(end - 3 - ddl):(end - ddl)]
+            desired_q = vec(qref[index, :])
+            Δq = desired_q - actual_q
+            Δq̇ = vec(zeros(4, 1) .- velocity(state)[(end - 3 - ddl):(end - ddl)])
 
-        if (t > sim_index * Δt && t < time[end])
+            v̇_new = pid_control!(pid, Δq, Δq̇, ∫edt, Δt)
+            v̇[(end - 3 - ddl):(end - ddl)] .= v̇_new
+
+            # Reset torque
+            for joint in joints(mechanism)
+                τ[velocity_range(state, joint)] .= 0 # no control
+                τ_file[velocity_range(state, joint)] .= 0 # no control
+            end
+
+            if (use_control == false)
+                rand!(τ)
+                if (length(τ) >= 8)
+                    τ[1:2] .= 0
+                end
+                τ .= (τ .- 0.5)
+                τ[(end - 1):end] .= 0
+            else
+                # Torque in the constrained space 
+                newτ = inverse_dynamics(state, v̇) #- dynamics_bias(state)
+                τ[(end - 3 - ddl):(end - ddl)] .= newτ[(end - 3 - ddl):(end - ddl)]
+            end
+        end
+        if (t >= sim_index * Δt && t < time[end])
+            if(write_torques)
+                data = [t,newτ[(end - 3 - ddl):(end - ddl)]...]
+                open("torques.txt", "a") do file
+                    write(file, join(data, ", ") * "\n")
+                end
+            end
+            open("torques.txt", "r") do file
+                lines = readlines(file)                          
+                if (index <= length(lines))                      
+                    line = split(lines[sim_index+1] , ", ")                     
+                    #t_file = parse(Float64, data[1])             
+                    temp_τ .= parse.(Float64, line[2:end])        
+                else
+                    stop = true                                  
+                end
+            end
+            τ_file[(end - 3 - ddl):(end - ddl)] .= temp_τ
             sim_index = sim_index + 1
             com = center_of_mass(state).v
             push!(rs.CoM, com)
-            push!(rs.torques, τ)
+            push!(rs.torques, τ_file)
             measureZMP(rs, dynamics_results, state)
         end
         if (t >= time[index] && stop == false)
