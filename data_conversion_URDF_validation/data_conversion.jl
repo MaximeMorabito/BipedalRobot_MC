@@ -1,3 +1,5 @@
+using LaTeXStrings
+
 function toInt16(numbers::Vector{Int})::Vector{Int}
     # First convert it to UInt16 to match the bit size, then reinterpret it as Int16
     new_numbers = reinterpret(Int16, UInt16.(numbers))
@@ -14,12 +16,38 @@ function transform_position(numbers::Vector{Int16}, frequency::Float64)::Vector{
     # Divide this value by the frequency to get time
     result = [numbers[1] / frequency]  
     
-    # transform to °
+    # Transform to °
     # For the speed, the data is in [ticks]
     # The maximum value is 4095 ticks
     # Hence, to transform the data to °, just multiply it by (360/4095)
-    append!(result, numbers[2:end] .*(360 / 4095))  # Apply scaling to the rest, starting from the second element
+    append!(result, numbers[2:end] .*(360 / 4095))
+
+    return result
+end
+
+function transform_velocity(numbers::Vector{Int16}, frequency::Float64)::Vector{Float64}
+    # The first element of each line is the index of the data (beginning at 0)
+    # Divide this value by the frequency to get time
+    result = [numbers[1] / frequency]  
     
+    # Transform to rad/s
+    # The input data is an adimensionalisation of RPMs by 0.229rmp
+    # To transform RMP into RPS (rotation per second), divide it by 60
+    # Multiply then by 2π to get the rad/s
+    append!(result, numbers[2:end] .*0.229*2π / 60) 
+    
+    return result
+end
+
+function transform_PWM(numbers::Vector{Int16}, frequency::Float64)::Vector{Float64}
+    # The first element of each line is the index of the data (beginning at 0)
+    # Divide this value by the frequency to get time
+    result = [numbers[1] / frequency]  
+    
+    # Transform to PWM [%]
+    # A PWM of 100% corresponf to 885 -> we just need to divide what we have by 885
+    append!(result, numbers[2:end] .*(1 / 885))
+
     return result
 end
     
@@ -56,3 +84,8 @@ data_out_PWM = joinpath(@__DIR__, "..", "data", "PWM.txt")
 freq = 20.0
 
 process_lines(data_in_position, data_out_position, transform_position, freq)
+process_lines(data_in_velocity, data_out_velocity, transform_velocity, freq)
+# Note if you are actually reading the velocity output file :
+# The robot first bends its knees, then marks a stop, then walks
+# It is thus normal to have values at 0 from ~2.5 - ~5 [s]
+process_lines(data_in_PWM, data_out_PWM, transform_PWM, freq)
