@@ -234,6 +234,8 @@ function trajectory_controller!(
     temp_τ = [0.0,0.0,0.0,0.0]
 
     function controller!(τ, t, state)
+        ddl = 2 # For 2 non-actuated foot 
+        stop = false
         if(write_torques)
             if (index >= size(qref)[1])
                 stop = true
@@ -242,7 +244,6 @@ function trajectory_controller!(
                 stop = false
             end
             v̇ = copy(velocity(state))
-            ddl = 2 # For 2 non-actuated foot 
             actual_q = configuration(state)[(end - 3 - ddl):(end - ddl)]
             desired_q = vec(qref[index, :])
             Δq = desired_q - actual_q

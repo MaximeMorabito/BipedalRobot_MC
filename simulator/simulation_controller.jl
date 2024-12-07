@@ -27,7 +27,7 @@ ANIMATE_RESULT = true;
 
 MODEL_2D = true;
 
-write_torques = false;
+write_torques = true;
 
 ###########################################################
 #                    Simulation parameters                #
