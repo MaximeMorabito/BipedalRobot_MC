@@ -27,7 +27,7 @@ ANIMATE_RESULT = true;
 
 MODEL_2D = true;
 
-write_torques = false;
+write_torques = true;
 
 ###########################################################
 #                    Simulation parameters                #
@@ -128,7 +128,7 @@ ZMProbot.set_nominal!(rs, vis, boom, actuators, foot)
 
 # Simulate the robot
 if(write_torques)
-    open("torques.txt", "w") do file
+    open(joinpath(@__DIR__, "..", "data", "torques.txt"), "w") do file
         # The file is now open in write mode, and all its contents are deleted.
         # Do nothing if you don't want to write anything.
     end
